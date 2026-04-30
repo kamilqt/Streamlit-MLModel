@@ -1,98 +1,46 @@
 <h1 align="center">Activity 3: Python Streamlit + ML Model</h1>
-<h3 align="center">Real-Time Object Detection and Tracking Using AI and Webcam</h3>
+<h3 align="center">Real-Time Object Detection Using AI and Webcam</h3>
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" />
   <img alt="Streamlit" src="https://img.shields.io/badge/Streamlit-App-FF4B4B?logo=streamlit&logoColor=white" />
   <img alt="YOLOv8" src="https://img.shields.io/badge/YOLOv8-Ultralytics-111111" />
-  <img alt="WebRTC" src="https://img.shields.io/badge/WebRTC-Live%20Video-0A66C2" />
+  <img alt="Webcam" src="https://img.shields.io/badge/Webcam-Live%20Detection-0A66C2" />
   <img alt="Status" src="https://img.shields.io/badge/Project-Complete-2E7D32" />
-  <img alt="Views" src="https://komarev.com/ghpvc/?username=keithdev&repo=python-streamlit-ml-model&label=Views&color=2E7D32&style=flat" />
 </p>
 
 <hr />
 
 <h2>1. Project Summary</h2>
+
 <p>
-This project is a browser-based computer vision application built with <strong>Streamlit</strong>,
-<strong>streamlit-webrtc</strong>, and <strong>Ultralytics YOLOv8</strong>. It captures webcam frames in real time,
-runs object detection and tracking, and renders annotated output (bounding boxes, labels, and runtime diagnostics).
+This activity is about building a <strong>Streamlit web application</strong> that detects real-time objects using Artificial Intelligence and a webcam.
+The model used in this project is <code>yolov8n.pt</code>, which is the nano version of YOLOv8 designed for faster performance and lightweight devices.
 </p>
+
 <p>
-The current configured model is <code>yolov8l.pt</code> to prioritize stronger detection accuracy.
+The application captures live video from the webcam, processes each frame, and detects visible objects with labels and bounding boxes.
 </p>
 
 <hr />
 
-<h2>2. Task Alignment</h2>
-<h3>Expected Software Output</h3>
-<ul>
-  <li>Functional web app with title <code>Live Object Detection &amp; Tracing</code>.</li>
-  <li>Embedded webcam feed in browser.</li>
-  <li>Real-time object detection with labels and bounding boxes.</li>
-  <li>Continuous object tracking across frames.</li>
-</ul>
+<h2>2. Technologies Used</h2>
 
-<h3>Required Enhancement Add-ons</h3>
 <ul>
-  <li><strong>Object Counting:</strong> Current frame counts + session track counts.</li>
-  <li><strong>Specific-Object Alerts:</strong> Selectable classes, confidence threshold, cooldown.</li>
-  <li><strong>Frame Saving:</strong> Manual capture + optional automatic capture to <code>captures/</code>.</li>
-</ul>
-
-<h3>Required Report Output</h3>
-<ul>
-  <li>Observation report (objects, lighting impact, performance).</li>
-  <li>At least 5 screenshots or screen recordings.</li>
-  <li>Reflection answers:
-    <ul>
-      <li>What objects were easily detected?</li>
-      <li>What factors affect detection accuracy?</li>
-    </ul>
-  </li>
+  <li><strong>Python</strong> – Main programming language</li>
+  <li><strong>Streamlit</strong> – Web application framework</li>
+  <li><strong>OpenCV</strong> – Camera access and image processing</li>
+  <li><strong>Ultralytics YOLOv8</strong> – Object detection model</li>
+  <li><strong>NumPy</strong> – Array and image data handling</li>
 </ul>
 
 <hr />
 
-<h2>3. Technical Architecture</h2>
-<h3>Core Stack</h3>
-<ul>
-  <li><code>streamlit</code> for UI rendering and controls.</li>
-  <li><code>streamlit-webrtc</code> for low-latency webcam streaming.</li>
-  <li><code>ultralytics</code> YOLOv8 for detection + tracking.</li>
-  <li><code>opencv-python</code> for frame annotation and image saving.</li>
-  <li><code>av</code> for frame conversion between WebRTC and OpenCV formats.</li>
-</ul>
+<h2>3. Model Used</h2>
 
-<h3>Pipeline</h3>
-<ol>
-  <li>Receive webcam frame via WebRTC callback.</li>
-  <li>Convert frame to BGR NumPy array.</li>
-  <li>Run <code>model.track(..., persist=True)</code>.</li>
-  <li>Extract classes, confidence, and tracking IDs.</li>
-  <li>Update runtime state (counts, alerts, FPS, saved frames).</li>
-  <li>Draw HUD and return annotated frame to browser stream.</li>
-</ol>
-
-<h3>Runtime State Design</h3>
 <p>
-State is held in a cached shared runtime object to prevent Streamlit reruns from resetting
-frame-dependent features. This ensures the following continue to work after button clicks:
-</p>
-<ul>
-  <li><code>Save Current Frame</code></li>
-  <li><code>Session Tracks</code></li>
-  <li><code>Recent Alerts</code></li>
-</ul>
-
-<hr />
-
-<h2>4. Reflection-Based Technical Analysis</h2>
-<h3>Observed Model Trade-off</h3>
-<p>
-Your reflection identified a correct and important behavior:
-larger YOLOv8 models generally improve detection quality but require more compute,
-which can reduce FPS and responsiveness on laptop-class CPUs.
+The model used is <code>yolov8n.pt</code>.
+This is the smallest and fastest YOLOv8 model, making it suitable for laptops or lower-end devices.
 </p>
 
 <table>
@@ -101,155 +49,98 @@ which can reduce FPS and responsiveness on laptop-class CPUs.
       <th>Model</th>
       <th>Speed</th>
       <th>Accuracy</th>
-      <th>Typical Use Case</th>
+      <th>Best For</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td><code>yolov8n.pt</code></td>
       <td>Fastest</td>
-      <td>Lowest</td>
-      <td>Real-time demo on weaker hardware</td>
+      <td>Basic</td>
+      <td>Low-end devices / quick demos</td>
     </tr>
     <tr>
       <td><code>yolov8s.pt</code></td>
       <td>Fast</td>
-      <td>Moderate</td>
-      <td>Balanced accuracy/performance</td>
+      <td>Better</td>
+      <td>Balanced performance</td>
     </tr>
     <tr>
       <td><code>yolov8m.pt</code></td>
       <td>Medium</td>
-      <td>Higher</td>
-      <td>When hardware can handle extra load</td>
-    </tr>
-    <tr>
-      <td><code>yolov8l.pt</code></td>
-      <td>Slowest (among these)</td>
-      <td>Highest (among these)</td>
-      <td>Accuracy-focused runs</td>
+      <td>High</td>
+      <td>Stronger laptops / GPUs</td>
     </tr>
   </tbody>
 </table>
 
-<h3>Objects Easily Detected (from reflection)</h3>
-<ul>
-  <li>Person</li>
-  <li>Book</li>
-  <li>Cell phone</li>
-  <li>Chair</li>
-  <li>Cup</li>
-  <li>Bowl</li>
-</ul>
-
-<h3>Factors Affecting Detection Accuracy (from reflection + technical interpretation)</h3>
-<ul>
-  <li><strong>Model scale:</strong> Larger model generally detects more accurately.</li>
-  <li><strong>Hardware capability:</strong> CPU/GPU and memory impact real-time throughput.</li>
-  <li><strong>Lighting quality:</strong> Poor lighting reduces confidence and stability.</li>
-  <li><strong>Camera quality:</strong> Low resolution or noisy sensors degrade detection.</li>
-  <li><strong>Motion blur:</strong> Fast motion reduces feature clarity.</li>
-  <li><strong>Occlusion and angle:</strong> Partially hidden objects are harder to classify.</li>
-  <li><strong>Object scale in frame:</strong> Very small objects are often missed.</li>
-</ul>
-
 <hr />
 
-<h2>5. Implemented Features</h2>
+<h2>4. Objects Tested</h2>
 
-<h3>Detection and Tracking</h3>
-<ul>
-  <li>YOLOv8 live object detection.</li>
-  <li>Persistent multi-frame tracking with track IDs.</li>
-  <li>Adjustable confidence and IoU thresholds.</li>
-</ul>
-
-<h3>Enhancements</h3>
-<ul>
-  <li>Current frame object counts.</li>
-  <li>Session unique track counts.</li>
-  <li>Configurable alerts for selected object classes.</li>
-  <li>Alert confidence threshold and cooldown.</li>
-  <li>Manual and auto frame capture to disk.</li>
-  <li>Compact dashboard metrics (FPS, frames processed, saved frames).</li>
-</ul>
-
-<h3>Performance Controls</h3>
-<ul>
-  <li><code>Inference Size</code> selector (320/416/512/640).</li>
-  <li><code>Infer Every N Frames</code> selector (1/2/3) for smoother playback on limited hardware.</li>
-  <li><code>max_det</code> cap to bound inference complexity per frame.</li>
-</ul>
-
-<hr />
-
-<h2>6. Setup and Run</h2>
-
-<h3>Prerequisites</h3>
-<ul>
-  <li>Python 3.10 or newer</li>
-  <li>Webcam</li>
-  <li>Windows/macOS/Linux with browser camera access</li>
-</ul>
-
-<h3>Install</h3>
-<pre><code>git clone &lt;your-github-repository-url&gt;
-cd PythonStreamlit+MLModel
-python -m venv .venv
-</code></pre>
-
-<p><strong>Windows PowerShell</strong></p>
-<pre><code>.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-</code></pre>
-
-<h3>Run</h3>
-<pre><code>streamlit run app.py
-</code></pre>
-
-<p>Open: <code>http://localhost:8501</code></p>
-<p>Allow browser camera permission when prompted.</p>
-
-<hr />
-
-<h2>7. Repository Structure</h2>
-<pre><code>PythonStreamlit+MLModel/
-├─ app.py
-├─ requirements.txt
-├─ task.md
-├─ reflection.txt
-├─ yolov8n.pt
-├─ yolov8s.pt
-├─ yolov8l.pt
-└─ captures/               (generated at runtime)
-</code></pre>
-
-<hr />
-
-<h2>8. Submission Checklist</h2>
-<ol>
-  <li>
-    Live Streamlit deployment link:
-    <a href="https://python-app-ml-model.streamlit.app">https://python-app-ml-model.streamlit.app</a>
-  </li>
-  <li>
-    GitHub repository link with this README:
-    <a href="https://github.com/ke1thdev/Python-Streamlit-ML-Model">https://github.com/ke1thdev/Python-Streamlit-ML-Model</a>
-  </li>
-  <li>Google Document report link containing:
-    <ul>
-      <li>Observation report</li>
-      <li>At least 5 screenshot/recording evidences</li>
-      <li>Reflection answers</li>
-    </ul>
-  </li>
-</ol>
-
-<hr />
-
-<h2>9. Practical Recommendation</h2>
 <p>
-For final grading demos, keep <code>yolov8l.pt</code> if accuracy is the priority and your laptop remains responsive.
-If lag becomes significant, reduce <code>Inference Size</code> or set <code>Infer Every N Frames</code> to 2.
-If real-time smoothness is more important than absolute accuracy, switch to <code>yolov8s.pt</code>.
+The following items were tested in front of the webcam:
+</p>
+
+<ul>
+  <li>Bowl</li>
+  <li>Cup</li>
+  <li>Knife</li>
+  <li>Scissors</li>
+  <li>Cellphone</li>
+</ul>
+
+<hr />
+
+<h2>5. Observations</h2>
+
+<ul>
+  <li>Some objects were detected correctly.</li>
+  <li>Some items were not detected properly by the model.</li>
+  <li>Small objects or unclear angles reduced detection accuracy.</li>
+  <li>Lighting and camera quality may affect results.</li>
+  <li>Some lag was noticed during real-time detection.</li>
+</ul>
+
+<hr />
+
+<h2>6. Possible Reasons for Lag</h2>
+
+<ul>
+  <li>Laptop hardware performance limitations</li>
+  <li>CPU usage during live webcam processing</li>
+  <li>Multiple apps running in background</li>
+  <li>Real-time AI inference workload</li>
+</ul>
+
+<hr />
+
+<h2>7. Reflection</h2>
+
+<p>
+Based on my testing, <code>yolov8n.pt</code> works well for simple real-time detection,
+but accuracy is lower compared to larger YOLO models.
+It is fast and lightweight, but some objects may be missed or labeled incorrectly.
+</p>
+
+<p>
+If better accuracy is needed, larger models like <code>yolov8s.pt</code> or <code>yolov8m.pt</code> can be used,
+but they may require better hardware.
+</p>
+
+<hr />
+
+<h2>8. How to Run</h2>
+
+<pre><code>pip install streamlit ultralytics opencv-python numpy
+streamlit run app.py
+</code></pre>
+
+<hr />
+
+<h2>9. Conclusion</h2>
+
+<p>
+This activity helped demonstrate how AI can be used in object detection through a webcam using Streamlit.
+It also showed the importance of choosing the right model depending on speed, accuracy, and device performance.
 </p>
