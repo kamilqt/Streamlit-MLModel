@@ -578,6 +578,45 @@ def process_snapshot_frame(
 
 
 
+def render_camera_fallback(
+    model: Any | None,
+    conf_threshold: float,
+    iou_threshold: float,
+    alert_targets: set[str],
+    alert_confidence: float,
+    alert_cooldown_sec: float,
+    inference_size: int,
+) -> None:
+    st.info("Live WebRTC is unavailable in this runtime. Using camera snapshot fallback.")
+    capture = st.camera_input("Open camera")
+    if capture is None:
+        return
+    data = capture.getvalue()
+    arr = np.frombuffer(data, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        st.error("Could not decode captured image.")
+        return
+    annotated = process_snapshot_frame(
+        img=img,
+        model=model,
+        conf_threshold=conf_threshold,
+        iou_threshold=iou_threshold,
+        alert_targets=alert_targets,
+        alert_confidence=alert_confidence,
+        alert_cooldown_sec=alert_cooldown_sec,
+        inference_size=inference_size,
+    )
+    st.image(annotated, channels="BGR", caption="Detection Snapshot", use_container_width=True)
+    if st.button("Save Snapshot", use_container_width=True):
+        save_frame(annotated, "snapshot")
+        with RUNTIME.lock:
+            RUNTIME.saved_frames += 1
+        st.success("Snapshot saved to captures/.")
+
+
+
+
 st.set_page_config(page_title="Live Object Detection & Tracing", layout="wide")
 
 
@@ -710,6 +749,15 @@ with video_col:
             st.code(WEBRTC_IMPORT_ERROR)
         if AV_IMPORT_ERROR:
             st.code(AV_IMPORT_ERROR)
+        render_camera_fallback(
+            model=model,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            alert_targets=set(alert_targets),
+            alert_confidence=alert_confidence,
+            alert_cooldown_sec=alert_cooldown_sec,
+            inference_size=inference_size,
+        )
     else:
         try:
             video_callback = create_video_callback(
@@ -735,6 +783,15 @@ with video_col:
         except Exception as webrtc_error:
             st.error("WebRTC session failed to start.")
             st.caption(f"WebRTC error: {type(webrtc_error).__name__}: {webrtc_error}")
+            render_camera_fallback(
+                model=model,
+                conf_threshold=conf_threshold,
+                iou_threshold=iou_threshold,
+                alert_targets=set(alert_targets),
+                alert_confidence=alert_confidence,
+                alert_cooldown_sec=alert_cooldown_sec,
+                inference_size=inference_size,
+            )
     st.markdown(
         '<div class="small-note">Use the Start button above the video widget to begin realtime detection.</div>',
         unsafe_allow_html=True,
