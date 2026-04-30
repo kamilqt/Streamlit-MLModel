@@ -11,6 +11,7 @@ import os
 import tempfile
 import time
 import math
+import sys
 
 
 import numpy as np
@@ -730,6 +731,13 @@ with st.sidebar:
     alert_cooldown_sec = st.slider("Alert Cooldown (s)", 1.0, 20.0, 4.0, 1.0)
     auto_capture = st.checkbox("Auto-save on target alert", value=True)
     auto_capture_interval_sec = st.slider("Auto-save interval (s)", 1.0, 30.0, 6.0, 1.0)
+    py_ver = sys.version_info
+    webrtc_supported_runtime = (py_ver.major, py_ver.minor) < (3, 14)
+    force_snapshot_mode = st.checkbox(
+        "Use snapshot camera mode (stability)",
+        value=not webrtc_supported_runtime,
+        help="Recommended on Python 3.14+ or when WebRTC camera start is unstable.",
+    )
 
 
     st.divider()
@@ -743,7 +751,18 @@ video_col, info_col = st.columns([1.9, 1.1], gap="medium")
 
 with video_col:
     st.subheader("Live Preview")
-    if webrtc_streamer is None or av is None:
+    if force_snapshot_mode:
+        st.warning("Snapshot camera mode enabled for runtime stability.")
+        render_camera_fallback(
+            model=model,
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            alert_targets=set(alert_targets),
+            alert_confidence=alert_confidence,
+            alert_cooldown_sec=alert_cooldown_sec,
+            inference_size=inference_size,
+        )
+    elif webrtc_streamer is None or av is None:
         st.error("Realtime preview is unavailable because WebRTC dependencies failed to load.")
         if WEBRTC_IMPORT_ERROR:
             st.code(WEBRTC_IMPORT_ERROR)
@@ -847,6 +866,3 @@ with info_col:
 
 
     render_live_stats()
-
-
-
