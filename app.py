@@ -11,7 +11,6 @@ import os
 import tempfile
 import time
 import math
-import sys
 
 
 import numpy as np
@@ -731,13 +730,6 @@ with st.sidebar:
     alert_cooldown_sec = st.slider("Alert Cooldown (s)", 1.0, 20.0, 4.0, 1.0)
     auto_capture = st.checkbox("Auto-save on target alert", value=True)
     auto_capture_interval_sec = st.slider("Auto-save interval (s)", 1.0, 30.0, 6.0, 1.0)
-    py_ver = sys.version_info
-    webrtc_supported_runtime = (py_ver.major, py_ver.minor) < (3, 14)
-    force_snapshot_mode = st.checkbox(
-        "Use snapshot camera mode (stability)",
-        value=not webrtc_supported_runtime,
-        help="Recommended on Python 3.14+ or when WebRTC camera start is unstable.",
-    )
 
 
     st.divider()
@@ -751,32 +743,13 @@ video_col, info_col = st.columns([1.9, 1.1], gap="medium")
 
 with video_col:
     st.subheader("Live Preview")
-    if force_snapshot_mode:
-        st.warning("Snapshot camera mode enabled for runtime stability.")
-        render_camera_fallback(
-            model=model,
-            conf_threshold=conf_threshold,
-            iou_threshold=iou_threshold,
-            alert_targets=set(alert_targets),
-            alert_confidence=alert_confidence,
-            alert_cooldown_sec=alert_cooldown_sec,
-            inference_size=inference_size,
-        )
-    elif webrtc_streamer is None or av is None:
+    if webrtc_streamer is None or av is None:
         st.error("Realtime preview is unavailable because WebRTC dependencies failed to load.")
         if WEBRTC_IMPORT_ERROR:
             st.code(WEBRTC_IMPORT_ERROR)
         if AV_IMPORT_ERROR:
             st.code(AV_IMPORT_ERROR)
-        render_camera_fallback(
-            model=model,
-            conf_threshold=conf_threshold,
-            iou_threshold=iou_threshold,
-            alert_targets=set(alert_targets),
-            alert_confidence=alert_confidence,
-            alert_cooldown_sec=alert_cooldown_sec,
-            inference_size=inference_size,
-        )
+        st.info("This app is configured for realtime WebRTC only.")
     else:
         try:
             video_callback = create_video_callback(
@@ -802,15 +775,7 @@ with video_col:
         except Exception as webrtc_error:
             st.error("WebRTC session failed to start.")
             st.caption(f"WebRTC error: {type(webrtc_error).__name__}: {webrtc_error}")
-            render_camera_fallback(
-                model=model,
-                conf_threshold=conf_threshold,
-                iou_threshold=iou_threshold,
-                alert_targets=set(alert_targets),
-                alert_confidence=alert_confidence,
-                alert_cooldown_sec=alert_cooldown_sec,
-                inference_size=inference_size,
-            )
+            st.info("Realtime detection requires a stable WebRTC runtime.")
     st.markdown(
         '<div class="small-note">Use the Start button above the video widget to begin realtime detection.</div>',
         unsafe_allow_html=True,
