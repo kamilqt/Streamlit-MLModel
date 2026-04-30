@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -11,6 +12,7 @@ import tempfile
 import time
 import math
 
+
 import numpy as np
 import streamlit as st
 try:
@@ -20,6 +22,7 @@ except Exception as av_import_error:
     av = None
     AV_IMPORT_ERROR = str(av_import_error)
 
+
 try:
     import cv2
     CV2_IMPORT_ERROR = ""
@@ -27,13 +30,21 @@ except Exception as cv2_error:
     cv2 = None
     CV2_IMPORT_ERROR = str(cv2_error)
 
+
 try:
     from streamlit_webrtc import webrtc_streamer
     WEBRTC_IMPORT_ERROR = ""
 except Exception as webrtc_import_error:
     webrtc_streamer = None
     WEBRTC_IMPORT_ERROR = str(webrtc_import_error)
-from ultralytics import YOLO
+try:
+    from ultralytics import YOLO
+    YOLO_IMPORT_ERROR = ""
+except Exception as yolo_import_error:
+    YOLO = None
+    YOLO_IMPORT_ERROR = str(yolo_import_error)
+
+
 
 
 CAPTURE_DIR = Path("captures")
@@ -44,6 +55,8 @@ MODEL_WEIGHTS = "yolov8n.pt"
 os.environ.setdefault("YOLO_CONFIG_DIR", str(Path(tempfile.gettempdir()) / "Ultralytics"))
 # Prevent runtime package auto-install attempts on read-only cloud environments.
 os.environ.setdefault("YOLO_AUTOINSTALL", "False")
+
+
 
 
 @dataclass
@@ -65,12 +78,15 @@ class RuntimeState:
     next_track_id: int = 1
     active_tracks: dict[int, dict[str, Any]] = field(default_factory=dict)
 
+
 @st.cache_resource
 def get_runtime() -> RuntimeState:
     # Keep one shared runtime object across Streamlit reruns.
     runtime = RuntimeState()
     ensure_runtime_compat(runtime)
     return runtime
+
+
 
 
 def ensure_runtime_compat(runtime: RuntimeState) -> None:
@@ -83,21 +99,29 @@ def ensure_runtime_compat(runtime: RuntimeState) -> None:
         runtime.saved_frames = 0
 
 
+
+
 @st.cache_resource
-def load_model() -> tuple[YOLO | None, str]:
+def load_model() -> tuple[Any | None, str]:
+    if YOLO is None:
+        return None, f"Ultralytics import failed: {YOLO_IMPORT_ERROR}"
     try:
         return YOLO(MODEL_WEIGHTS), ""
     except Exception as model_error:
         return None, f"{type(model_error).__name__}: {model_error}"
 
 
-def get_model_names(model: YOLO | None) -> list[str]:
+
+
+def get_model_names(model: Any | None) -> list[str]:
     if model is None:
         return []
     names = model.names
     if isinstance(names, dict):
         return [str(names[i]) for i in sorted(names.keys())]
     return [str(n) for n in names]
+
+
 
 
 def get_label_from_names(names: Any, cls_id: int) -> str:
@@ -110,6 +134,8 @@ def get_label_from_names(names: Any, cls_id: int) -> str:
     return str(cls_id)
 
 
+
+
 def save_frame(image: Any, reason: str) -> str:
     if cv2 is None:
         return ""
@@ -117,6 +143,8 @@ def save_frame(image: Any, reason: str) -> str:
     out_path = CAPTURE_DIR / f"{reason}_{timestamp}.jpg"
     cv2.imwrite(str(out_path), image)
     return str(out_path)
+
+
 
 
 def snapshot_runtime() -> dict[str, Any]:
@@ -131,6 +159,8 @@ def snapshot_runtime() -> dict[str, Any]:
             "saved_frames": RUNTIME.saved_frames,
             "latest_frame_available": RUNTIME.latest_annotated_frame is not None,
         }
+
+
 
 
 def reset_runtime() -> None:
@@ -151,6 +181,8 @@ def reset_runtime() -> None:
         RUNTIME.last_auto_capture_ts = 0.0
         RUNTIME.next_track_id = 1
         RUNTIME.active_tracks = {}
+
+
 
 
 def assign_lightweight_tracks(
@@ -174,14 +206,17 @@ def assign_lightweight_tracks(
         for tid in stale_ids:
             del RUNTIME.active_tracks[tid]
 
+
         assignments: list[tuple[int, dict[str, Any]]] = []
         used_track_ids: set[int] = set()
+
 
         for det in detections:
             label = str(det["label"])
             cx, cy = det["cx"], det["cy"]
             best_track_id = None
             best_distance = float("inf")
+
 
             for track_id, trk in RUNTIME.active_tracks.items():
                 if track_id in used_track_ids:
@@ -194,10 +229,12 @@ def assign_lightweight_tracks(
                     best_distance = dist
                     best_track_id = track_id
 
+
             if best_track_id is None:
                 best_track_id = RUNTIME.next_track_id
                 RUNTIME.next_track_id += 1
                 RUNTIME.session_track_counts[label] += 1
+
 
             RUNTIME.active_tracks[best_track_id] = {
                 "label": label,
@@ -208,7 +245,10 @@ def assign_lightweight_tracks(
             used_track_ids.add(best_track_id)
             assignments.append((best_track_id, det))
 
+
         return assignments
+
+
 
 
 def overlay_hud(frame: Any, fps: float, current_counts: Counter, latest_alert: str) -> Any:
@@ -217,6 +257,7 @@ def overlay_hud(frame: Any, fps: float, current_counts: Counter, latest_alert: s
     hud = frame.copy()
     cv2.rectangle(hud, (10, 10), (520, 160), (0, 0, 0), -1)
     cv2.addWeighted(hud, 0.35, frame, 0.65, 0, frame)
+
 
     cv2.putText(
         frame,
@@ -229,11 +270,13 @@ def overlay_hud(frame: Any, fps: float, current_counts: Counter, latest_alert: s
         cv2.LINE_AA,
     )
 
+
     top_counts = ", ".join(
         [f"{label}:{count}" for label, count in current_counts.most_common(4)]
     )
     if not top_counts:
         top_counts = "No objects detected"
+
 
     cv2.putText(
         frame,
@@ -245,6 +288,7 @@ def overlay_hud(frame: Any, fps: float, current_counts: Counter, latest_alert: s
         2,
         cv2.LINE_AA,
     )
+
 
     alert_text = latest_alert if latest_alert else "Alert: none"
     cv2.putText(
@@ -260,8 +304,10 @@ def overlay_hud(frame: Any, fps: float, current_counts: Counter, latest_alert: s
     return frame
 
 
+
+
 def create_video_callback(
-    model: YOLO | None,
+    model: Any | None,
     conf_threshold: float,
     iou_threshold: float,
     alert_targets: set[str],
@@ -277,8 +323,10 @@ def create_video_callback(
     names = {} if model is None else model.names
     callback_state = {"frame_index": 0}
 
+
     def get_label(cls_id: int) -> str:
         return get_label_from_names(names, cls_id)
+
 
     def callback(frame: av.VideoFrame) -> av.VideoFrame:
         callback_state["frame_index"] += 1
@@ -286,6 +334,7 @@ def create_video_callback(
         now = time.time()
         if model is None:
             return av.VideoFrame.from_ndarray(img, format="bgr24")
+
 
         # Skip inference on selected frames for smoother UI on slower machines.
         if process_every_n_frames > 1 and callback_state["frame_index"] % process_every_n_frames != 0:
@@ -302,6 +351,7 @@ def create_video_callback(
                 )
             if cached is not None:
                 return av.VideoFrame.from_ndarray(cached, format="bgr24")
+
 
         try:
             results = model.predict(
@@ -322,12 +372,14 @@ def create_video_callback(
         new_track_keys: list[tuple[str, int]] = []
         fired_alerts: list[str] = []
 
+
         boxes = result.boxes
         detections: list[dict[str, Any]] = []
         if boxes is not None and boxes.cls is not None and boxes.xyxy is not None:
             cls_ids = boxes.cls.int().tolist()
             confs = boxes.conf.tolist() if boxes.conf is not None else [1.0] * len(cls_ids)
             bboxes = boxes.xyxy.tolist()
+
 
             for cls_id, cls_conf, bbox in zip(cls_ids, confs, bboxes):
                 x1, y1, x2, y2 = bbox
@@ -345,12 +397,15 @@ def create_video_callback(
                 if label in alert_targets and float(cls_conf) >= alert_confidence:
                     fired_alerts.append(f"{label}|{float(cls_conf):.2f}")
 
+
         for track_id, det in assign_lightweight_tracks(detections, now_ts=now):
             new_track_keys.append((det["label"], int(track_id)))
+
 
         with RUNTIME.lock:
             for track_key in new_track_keys:
                 RUNTIME.seen_tracks.add(track_key)
+
 
             for alert_item in fired_alerts:
                 label, score = alert_item.split("|")
@@ -364,6 +419,7 @@ def create_video_callback(
                     RUNTIME.alert_history.append(latest_alert)
             RUNTIME.alert_history = RUNTIME.alert_history[-20:]
 
+
             RUNTIME.frames_processed += 1
             RUNTIME.fps_window_count += 1
             elapsed = now - RUNTIME.fps_window_start
@@ -372,9 +428,11 @@ def create_video_callback(
                 RUNTIME.fps_window_count = 0
                 RUNTIME.fps_window_start = now
 
+
             RUNTIME.current_frame_counts = current_counts
             if latest_alert:
                 RUNTIME.latest_alert_message = latest_alert
+
 
             annotated = overlay_hud(
                 annotated,
@@ -383,7 +441,9 @@ def create_video_callback(
                 latest_alert=RUNTIME.latest_alert_message,
             )
 
+
             RUNTIME.latest_annotated_frame = annotated.copy()
+
 
             if auto_capture and fired_alerts:
                 if now - RUNTIME.last_auto_capture_ts >= auto_capture_interval_sec:
@@ -391,9 +451,13 @@ def create_video_callback(
                     RUNTIME.saved_frames += 1
                     RUNTIME.last_auto_capture_ts = now
 
+
         return av.VideoFrame.from_ndarray(annotated, format="bgr24")
 
+
     return callback
+
+
 
 
 def build_rtc_configuration() -> dict[str, Any]:
@@ -403,11 +467,13 @@ def build_rtc_configuration() -> dict[str, Any]:
         {"urls": ["stun:stun.cloudflare.com:3478"]},
     ]
 
+
     # Optional TURN configuration from environment variables only.
     # This avoids noisy "No secrets found" warnings when secrets.toml is absent.
     turn_urls = os.getenv("TURN_URLS", "")
     turn_username = os.getenv("TURN_USERNAME", "")
     turn_password = os.getenv("TURN_PASSWORD", "")
+
 
     if isinstance(turn_urls, str):
         parsed_urls = [u.strip() for u in turn_urls.split(",") if u.strip()]
@@ -415,6 +481,7 @@ def build_rtc_configuration() -> dict[str, Any]:
         parsed_urls = [str(u).strip() for u in turn_urls if str(u).strip()]
     else:
         parsed_urls = []
+
 
     if parsed_urls and turn_username and turn_password:
         ice_servers.append(
@@ -425,11 +492,13 @@ def build_rtc_configuration() -> dict[str, Any]:
             }
         )
 
+
     return {"iceServers": ice_servers, "iceTransportPolicy": "all"}
+
 
 def process_snapshot_frame(
     img: Any,
-    model: YOLO | None,
+    model: Any | None,
     conf_threshold: float,
     iou_threshold: float,
     alert_targets: set[str],
@@ -452,11 +521,13 @@ def process_snapshot_frame(
     except Exception:
         return img
 
+
     annotated = result.plot()
     current_counts: Counter = Counter()
     latest_alert = ""
     fired_alerts: list[str] = []
     detections: list[dict[str, Any]] = []
+
 
     names = model.names
     boxes = result.boxes
@@ -478,7 +549,9 @@ def process_snapshot_frame(
             if label in alert_targets and float(cls_conf) >= alert_confidence:
                 fired_alerts.append(f"{label}|{float(cls_conf):.2f}")
 
+
     assign_lightweight_tracks(detections, now_ts=now)
+
 
     with RUNTIME.lock:
         for alert_item in fired_alerts:
@@ -494,6 +567,7 @@ def process_snapshot_frame(
         RUNTIME.current_frame_counts = current_counts
         RUNTIME.latest_annotated_frame = annotated.copy()
 
+
     return overlay_hud(
         annotated,
         fps=RUNTIME.fps,
@@ -502,20 +576,26 @@ def process_snapshot_frame(
     )
 
 
+
+
 st.set_page_config(page_title="Live Object Detection & Tracing", layout="wide")
+
 
 RUNTIME = get_runtime()
 model, model_error = load_model()
 available_labels = get_model_names(model)
+
 
 if cv2 is None:
     st.error("OpenCV failed to load in this environment.")
     st.code(CV2_IMPORT_ERROR)
     st.stop()
 
+
 if model is None:
     st.error("YOLO model failed to load. Detection will be disabled until this is fixed.")
     st.code(model_error)
+
 
 st.markdown(
     """
@@ -561,6 +641,7 @@ h1, h2, h3, h4 {
     unsafe_allow_html=True,
 )
 
+
 st.title("Live Object Detection & Tracing")
 st.write(
     f"Real-time {MODEL_WEIGHTS} detection and tracking with compact controls and alerting."
@@ -574,10 +655,12 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
 with st.sidebar:
     st.header("Control Panel")
     st.caption("Tune performance, detection, and alerts.")
     st.divider()
+
 
     st.subheader("Detection")
     conf_threshold = st.slider("Confidence", 0.10, 0.95, 0.25, 0.05)
@@ -595,6 +678,7 @@ with st.sidebar:
         help="Set to 2 or 3 for smoother preview on low-end devices.",
     )
 
+
     st.subheader("Alerts")
     alert_targets = st.multiselect(
         "Target Objects",
@@ -608,12 +692,15 @@ with st.sidebar:
     auto_capture = st.checkbox("Auto-save on target alert", value=True)
     auto_capture_interval_sec = st.slider("Auto-save interval (s)", 1.0, 30.0, 6.0, 1.0)
 
+
     st.divider()
     if st.button("Reset Session Stats", use_container_width=True):
         reset_runtime()
         st.success("Session stats reset.")
 
+
 video_col, info_col = st.columns([1.9, 1.1], gap="medium")
+
 
 with video_col:
     st.subheader("Live Preview")
@@ -653,15 +740,18 @@ with video_col:
         unsafe_allow_html=True,
     )
 
+
 with info_col:
     @st.fragment(run_every="1s")
     def render_live_stats() -> None:
         stats = snapshot_runtime()
 
+
         if stats["latest_alert_message"]:
             st.warning(stats["latest_alert_message"])
         else:
             st.caption("No active alerts.")
+
 
         with st.expander("Current Counts", expanded=True):
             if stats["current_frame_counts"]:
@@ -676,6 +766,7 @@ with info_col:
             else:
                 st.caption("No detections yet.")
 
+
         with st.expander("Session Tracks", expanded=False):
             if stats["session_track_counts"]:
                 st.table(
@@ -689,6 +780,7 @@ with info_col:
             else:
                 st.caption("No tracking data yet.")
 
+
         with st.expander("Recent Alerts", expanded=False):
             if stats["alert_history"]:
                 for alert_line in stats["alert_history"]:
@@ -696,4 +788,8 @@ with info_col:
             else:
                 st.caption("No alerts recorded.")
 
+
     render_live_stats()
+
+
+
